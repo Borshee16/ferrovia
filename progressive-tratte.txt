@@ -1,0 +1,48 @@
+Lecce Foggia
+Lecce 797+903
+Surbo 794+332
+Trepuzzi 787+504
+Squinzano 783+303
+S Pietro Vernotico 776+562
+Brindisi 759+539
+San Vito 747+836
+Carovigno 731+875
+Ostuni 722+894
+Cisternino 710+146
+Fasano 702+989
+Monopoli 689+160
+Polignano a Mare 681+575
+Mola di Bari 667+771
+Bari Torre a Mare 660+069
+Bari Torre Quetta 652+544
+Bari Parco Sud 651+005
+Bari Centrale 648+616 che diventa 648+594
+Bari Zona Industriale 644+650
+Bari Palese 639+055
+Bari S. Spirito 637+074
+Giovinazzo 630+190
+Molfetta 623+875
+Bisceglie 614+534
+Trani 606+513
+Barletta 593+919
+Trinitapoli 577+692
+Cerignola 560+292
+Ortanova 545+661
+Incoronata 536+309
+Foggia 526+027
+
+
+
+
+
+
+Bari Bitritto
+Bari Centrale 0+000
+Bari Parco Nord 2+549 che diventa 0+000
+Bari S. Rita 4+621
+Bari Loseto 7+989
+Bitritto 9+284
+
+Salti progressiva 0+646 a 0+530
+
+
