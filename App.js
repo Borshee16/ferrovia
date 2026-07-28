@@ -1,4 +1,4 @@
-// App.js
+﻿// App.js
 // VERSIONE ASCII SAFE - Taranto Potenza sbloccata - niente caratteri speciali
 // DoveSono? - Android
 // UI Focus One: Mappa / Home / Resoconti-Giunti / Impostazioni
@@ -1329,8 +1329,28 @@ async function stopRecording() {
   }
 
 async function aggiornaDoveSono() {
+  if (isDoveSonoLoading) return;
+
   try {
     setIsDoveSonoLoading(true);
+
+    if (Platform.OS === "web") {
+      if (typeof navigator === "undefined" || !navigator.geolocation) {
+        throw new Error("Geolocalizzazione non disponibile in questo browser.");
+      }
+
+      const location = await new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          maximumAge: 0,
+          timeout: 15000,
+        });
+      });
+
+      setPermissionStatus("granted");
+      setPosizioneDoveSono(normalizeLocation(location));
+      return;
+    }
 
     const fg = await Location.requestForegroundPermissionsAsync();
     setPermissionStatus(fg?.status || "unknown");
@@ -1350,12 +1370,22 @@ async function aggiornaDoveSono() {
 
     setPosizioneDoveSono(normalizeLocation(location));
   } catch (error) {
-    Alert.alert("Errore GPS", error.message);
+    if (Platform.OS === "web" && error?.code === 1) {
+      setPermissionStatus("denied");
+      Alert.alert(
+        "Permesso GPS negato",
+        "Consenti la posizione nelle impostazioni del browser e riprova."
+      );
+    } else {
+      Alert.alert(
+        "Errore GPS",
+        error?.message || "Posizione non disponibile. Riprova."
+      );
+    }
   } finally {
     setIsDoveSonoLoading(false);
   }
 }
-
   async function importGpxToArchive() {
     try {
       await ensureTracksDir();
@@ -2031,3 +2061,4 @@ const styles = StyleSheet.create({
   navButtonText: { color: "#9fb0c1", fontSize: 11, fontWeight: "900" },
   navButtonTextActive: { color: "#68e241" },
 });
+
