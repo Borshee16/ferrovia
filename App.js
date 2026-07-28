@@ -1343,7 +1343,7 @@ async function aggiornaDoveSono() {
         navigator.geolocation.getCurrentPosition(resolve, reject, {
           enableHighAccuracy: true,
           maximumAge: 0,
-          timeout: 15000,
+          timeout: 5000,
         });
       });
 
@@ -2061,4 +2061,5 @@ const styles = StyleSheet.create({
   navButtonText: { color: "#9fb0c1", fontSize: 11, fontWeight: "900" },
   navButtonTextActive: { color: "#68e241" },
 });
+
 
