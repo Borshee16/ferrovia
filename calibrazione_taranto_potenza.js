@@ -1,16 +1,16 @@
-// calibrazione_taranto_potenza.js
+﻿// calibrazione_taranto_potenza.js
 // Calibrazione BOZZA Taranto -> Potenza per DoveSono?.
 // Usa progressive/stazioni fornite e master provvisoria con raccordi automatici.
 // La tratta include cambi di sistema progressiva:
 // - Taranto 114+529 -> Bivio Metaponto 110+613 / 3+916
 // - Bivio Metaponto 3+916 -> Metaponto 43+217
-// - Metaponto 271+666 -> Potenza Centrale 164+058, progressiva decrescente verso Potenza.
+// - Metaponto 271+166 -> Potenza Centrale 164+058, progressiva decrescente verso Potenza.
 
 export const MASTER_TARANTO_POTENZA = {
   nome: "MASTER BOZZA Taranto - Potenza",
   direzione: "Taranto -> Potenza",
   lunghezzaMasterMetri: 150779.0,
-  progressivaFinaleMetri: 150825,
+  progressivaFinaleMetri: 150325,
   stato: "bozza",
 };
 
@@ -19,16 +19,16 @@ export const SALTI_PROGRESSIVA_TARANTO_POTENZA = [];
 export const GALLERIE_TARANTO_POTENZA = [
   {
     "nome": "Galleria Carvotto",
-    "inizio": 116188,
-    "fine": 118210,
+    "inizio": 115688,
+    "fine": 117710,
     "lunghezza": 2022,
     "progressivaUfficialeDa": "196+673",
     "progressivaUfficialeA": "198+695"
   },
   {
     "nome": "Galleria Albano",
-    "inizio": 124564,
-    "fine": 125589,
+    "inizio": 124064,
+    "fine": 125089,
     "lunghezza": 1025,
     "progressivaUfficialeDa": "189+294",
     "progressivaUfficialeA": "190+319"
@@ -74,62 +74,62 @@ export const ANCORAGGI_STAZIONI_TARANTO_POTENZA = [
   {
     "nome": "Bernalda",
     "dMaster": 56040.6,
-    "progressivaReale": 56161
+    "progressivaReale": 55661
   },
   {
     "nome": "Pisticci",
     "dMaster": 68177.7,
-    "progressivaReale": 68358
+    "progressivaReale": 67858
   },
   {
     "nome": "Ferrandina Matera",
     "dMaster": 81038.4,
-    "progressivaReale": 81218
+    "progressivaReale": 80718
   },
   {
     "nome": "Salandra",
     "dMaster": 94232.0,
-    "progressivaReale": 94355
+    "progressivaReale": 93855
   },
   {
     "nome": "Grassano",
     "dMaster": 103898.6,
-    "progressivaReale": 103996
+    "progressivaReale": 103496
   },
   {
     "nome": "Calciano",
     "dMaster": 107209.9,
-    "progressivaReale": 107344
+    "progressivaReale": 106844
   },
   {
     "nome": "Campomaggiore",
     "dMaster": 119184.8,
-    "progressivaReale": 119264
+    "progressivaReale": 118764
   },
   {
     "nome": "Albano Lucania",
     "dMaster": 126166.8,
-    "progressivaReale": 126275
+    "progressivaReale": 125775
   },
   {
     "nome": "Trivigno",
     "dMaster": 128698.8,
-    "progressivaReale": 128806
+    "progressivaReale": 128306
   },
   {
     "nome": "Brindisi di Montagna",
     "dMaster": 133449.6,
-    "progressivaReale": 133579
+    "progressivaReale": 133079
   },
   {
     "nome": "Vaglio Basilicata",
     "dMaster": 143317.2,
-    "progressivaReale": 143378
+    "progressivaReale": 142878
   },
   {
     "nome": "Potenza Centrale",
     "dMaster": 150779.0,
-    "progressivaReale": 150825
+    "progressivaReale": 150325
   }
 ];
 
@@ -186,84 +186,84 @@ export const RIFERIMENTI_TARANTO_POTENZA = [
   {
     "nome": "Bernalda",
     "tipo": "stazione",
-    "progressiva": 56161,
+    "progressiva": 55661,
     "lat": 40.397588009,
     "lon": 16.68226555
   },
   {
     "nome": "Pisticci",
     "tipo": "stazione",
-    "progressiva": 68358,
+    "progressiva": 67858,
     "lat": 40.420862258,
     "lon": 16.552198498
   },
   {
     "nome": "Ferrandina Matera",
     "tipo": "stazione",
-    "progressiva": 81218,
+    "progressiva": 80718,
     "lat": 40.516448402,
     "lon": 16.475491731
   },
   {
     "nome": "Salandra",
     "tipo": "stazione",
-    "progressiva": 94355,
+    "progressiva": 93855,
     "lat": 40.583504167,
     "lon": 16.351590967
   },
   {
     "nome": "Grassano",
     "tipo": "stazione",
-    "progressiva": 103996,
+    "progressiva": 103496,
     "lat": 40.593289071,
     "lon": 16.241109083
   },
   {
     "nome": "Calciano",
     "tipo": "stazione",
-    "progressiva": 107344,
+    "progressiva": 106844,
     "lat": 40.5951259,
     "lon": 16.202521929
   },
   {
     "nome": "Campomaggiore",
     "tipo": "stazione",
-    "progressiva": 119264,
+    "progressiva": 118764,
     "lat": 40.550811022,
     "lon": 16.086805316
   },
   {
     "nome": "Albano Lucania",
     "tipo": "stazione",
-    "progressiva": 126275,
+    "progressiva": 125775,
     "lat": 40.574696241,
     "lon": 16.021306745
   },
   {
     "nome": "Trivigno",
     "tipo": "stazione",
-    "progressiva": 128806,
+    "progressiva": 128306,
     "lat": 40.588565311,
     "lon": 15.99787216
   },
   {
     "nome": "Brindisi di Montagna",
     "tipo": "stazione",
-    "progressiva": 133579,
+    "progressiva": 133079,
     "lat": 40.611984692,
     "lon": 15.955878214
   },
   {
     "nome": "Vaglio Basilicata",
     "tipo": "stazione",
-    "progressiva": 143378,
+    "progressiva": 142878,
     "lat": 40.656323618,
     "lon": 15.880126112
   },
   {
     "nome": "Potenza Centrale",
     "tipo": "stazione",
-    "progressiva": 150825,
+    "progressiva": 150325,
     "lat": 40.629462164,
     "lon": 15.806820943
   }
@@ -293,7 +293,7 @@ export function metriToProgressiva(metri) {
     return formatKm(p);
   }
 
-  const progressivaMetapontoPotenza = 271666 - (p - 43217);
+  const progressivaMetapontoPotenza = 271166 - (p - 43217);
   return formatKm(progressivaMetapontoPotenza);
 }
 
@@ -530,3 +530,4 @@ export function trovaProssimaLocalita(progressivaMetri, direzioneMappa = "tarant
     distanzaMetri: progressivaMetri - prossima.progressiva,
   };
 }
+
