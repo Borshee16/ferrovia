@@ -1,7 +1,7 @@
-﻿// App.js
+// App.js
 // VERSIONE ASCII SAFE - Taranto Potenza sbloccata - niente caratteri speciali
 // DoveSono? - Android
-// UI Focus One: Mappa / Home / Resoconti-Giunti / Impostazioni
+// UI Control Panel: Mappa / Home / Mezzi / Impostazioni
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -48,11 +48,13 @@ import {
 
 import {
   descriviPosizioneSuMaster as descriviPosizioneBariBitritto,
+  creaTabellaRiferimentiCalibrati as creaTabellaRiferimentiBariBitritto,
   trovaProssimaLocalita as trovaProssimaLocalitaBariBitritto,
 } from "./calibrazione_bari_bitritto";
 
 import {
   descriviPosizioneSuMaster as descriviPosizioneFoggiaLecce,
+  creaTabellaRiferimentiCalibrati as creaTabellaRiferimentiFoggiaLecce,
   trovaProssimaLocalita as trovaProssimaLocalitaFoggiaLecce,
 } from "./calibrazione_foggia_lecce";
 
@@ -66,6 +68,7 @@ import {
   LINEA_BARI_TARANTO,
   metriToProgressiva,
 } from "./linea_bari_taranto";
+import { MEZZI_DATA } from "./mezzi_data";
 
 const TRATTE_DOVESONO = [
   {
@@ -142,6 +145,7 @@ function getMotoreTratta(trattaId) {
       trovaDaGps: trovaPosizioneTarantoBrindisiDaGps,
       descrivi: descriviPosizioneTarantoBrindisi,
       prossimaLocalita: trovaProssimaLocalitaTarantoBrindisi,
+      riferimenti: creaTabellaRiferimentiTarantoBrindisi,
     };
   }
 
@@ -150,6 +154,7 @@ function getMotoreTratta(trattaId) {
       trovaDaGps: trovaPosizioneTarantoPotenzaDaGps,
       descrivi: descriviPosizioneTarantoPotenza,
       prossimaLocalita: trovaProssimaLocalitaTarantoPotenza,
+      riferimenti: creaTabellaRiferimentiTarantoPotenza,
     };
   }
 
@@ -158,6 +163,7 @@ function getMotoreTratta(trattaId) {
       trovaDaGps: trovaPosizioneBariBitrittoDaGps,
       descrivi: descriviPosizioneBariBitritto,
       prossimaLocalita: trovaProssimaLocalitaBariBitritto,
+      riferimenti: creaTabellaRiferimentiBariBitritto,
     };
   }
 
@@ -166,6 +172,7 @@ function getMotoreTratta(trattaId) {
       trovaDaGps: trovaPosizioneFoggiaLecceDaGps,
       descrivi: descriviPosizioneFoggiaLecce,
       prossimaLocalita: trovaProssimaLocalitaFoggiaLecce,
+      riferimenti: creaTabellaRiferimentiFoggiaLecce,
     };
   }
 
@@ -173,7 +180,49 @@ function getMotoreTratta(trattaId) {
     trovaDaGps: trovaPosizioneSuMasterDaGps,
     descrivi: descriviPosizioneSuMaster,
     prossimaLocalita: trovaProssimaLocalita,
+    riferimenti: creaTabellaRiferimentiCalibrati,
   };
+}
+
+function trovaLocalitaAdiacenti(distanzaMasterMetri, riferimenti, direzioneMappa) {
+  if (!Number.isFinite(distanzaMasterMetri) || !Array.isArray(riferimenti)) return null;
+
+  const localita = riferimenti
+    .filter((item) => Number.isFinite(item.distanzaMasterMetri))
+    .sort((a, b) => a.distanzaMasterMetri - b.distanzaMasterMetri);
+
+  if (localita.length < 2) return null;
+
+  let prima = localita[0];
+  let dopo = localita[localita.length - 1];
+
+  for (let index = 0; index < localita.length - 1; index += 1) {
+    const corrente = localita[index];
+    const successiva = localita[index + 1];
+
+    if (
+      distanzaMasterMetri >= corrente.distanzaMasterMetri &&
+      distanzaMasterMetri <= successiva.distanzaMasterMetri
+    ) {
+      prima = corrente;
+      dopo = successiva;
+      break;
+    }
+  }
+
+  const direzioniInverse = new Set([
+    "taranto_bari",
+    "brindisi_taranto",
+    "potenza_taranto",
+    "bitritto_bari",
+    "lecce_foggia",
+  ]);
+
+  if (direzioniInverse.has(direzioneMappa)) {
+    return { da: dopo.nome, a: prima.nome };
+  }
+
+  return { da: prima.nome, a: dopo.nome };
 }
 
 const TASK_NAME = "traccia-ferroviaria-background-location";
@@ -673,6 +722,7 @@ function trovaProssimaLocalita(progressivaMetri, direzioneMappa) {
 
 export default function App() {
   const [activeTab, setActiveTab] = useState("map");
+  const [hideBottomNav, setHideBottomNav] = useState(false);
   const [trattaSelezionataId, setTrattaSelezionataId] = useState("bari_taranto");
   const [permissionStatus, setPermissionStatus] = useState("unknown");
   const [backgroundStatus, setBackgroundStatus] = useState("unknown");
@@ -734,6 +784,15 @@ const isSavingPoint = useRef(false);
       points,
     });
   }, [lastLocation, averageAccuracy, meta.rejectedCount, points, now]);
+
+  const gpsQualityDoveSono = useMemo(() => {
+    return getGpsQuality({
+      lastLocation: posizioneDoveSono,
+      averageAccuracy: posizioneDoveSono?.accuracy,
+      rejectedCount: 0,
+      points: posizioneDoveSono ? [posizioneDoveSono] : [],
+    });
+  }, [posizioneDoveSono, now]);
 
   const durationText = useMemo(() => {
     if (!meta.startedAt) return "--";
@@ -841,6 +900,28 @@ const prossimaLocalitaDoveSono = useMemo(() => {
     direzioneMappa
   );
 }, [infoDoveSono, direzioneMappa, trattaSelezionataId]);
+
+const localitaAdiacentiDoveSono = useMemo(() => {
+  if (!posizioneDoveSonoSuMaster) return null;
+
+  try {
+    const motore = getMotoreTratta(trattaSelezionataId);
+    const riferimenti = motore.riferimenti();
+
+    return trovaLocalitaAdiacenti(
+      posizioneDoveSonoSuMaster.distanzaMasterMetri,
+      riferimenti,
+      direzioneMappa
+    );
+  } catch (error) {
+    console.warn("Errore localita adiacenti:", error?.message || error);
+    return null;
+  }
+}, [posizioneDoveSonoSuMaster, direzioneMappa, trattaSelezionataId]);
+
+  useEffect(() => {
+    if (activeTab !== "vehicles") setHideBottomNav(false);
+  }, [activeTab]);
 
   const tabellaGallerie = useMemo(() => {
     try {
@@ -1343,7 +1424,7 @@ async function aggiornaDoveSono() {
         navigator.geolocation.getCurrentPosition(resolve, reject, {
           enableHighAccuracy: true,
           maximumAge: 0,
-          timeout: 5000,
+          timeout: 15000,
         });
       });
 
@@ -1372,20 +1453,15 @@ async function aggiornaDoveSono() {
   } catch (error) {
     if (Platform.OS === "web" && error?.code === 1) {
       setPermissionStatus("denied");
-      Alert.alert(
-        "Permesso GPS negato",
-        "Consenti la posizione nelle impostazioni del browser e riprova."
-      );
+      Alert.alert("Permesso GPS negato", "Consenti la posizione nelle impostazioni del browser e riprova.");
     } else {
-      Alert.alert(
-        "Errore GPS",
-        error?.message || "Posizione non disponibile. Riprova."
-      );
+      Alert.alert("Errore GPS", error?.message || "Posizione non disponibile. Riprova.");
     }
   } finally {
     setIsDoveSonoLoading(false);
   }
 }
+
   async function importGpxToArchive() {
     try {
       await ensureTracksDir();
@@ -1457,6 +1533,8 @@ async function aggiornaDoveSono() {
             posizioneDoveSonoSuMaster={posizioneDoveSonoSuMaster}
             infoDoveSono={infoDoveSono}
             prossimaLocalitaDoveSono={prossimaLocalitaDoveSono}
+            localitaAdiacentiDoveSono={localitaAdiacentiDoveSono}
+            gpsQuality={gpsQualityDoveSono}
           />
         ) : activeTab === "home" ? (
           <HomeView
@@ -1497,8 +1575,8 @@ async function aggiornaDoveSono() {
             shareSavedTrack={shareSavedTrack}
             deleteSavedTrack={deleteSavedTrack}
           />
-        ) : activeTab === "reports" ? (
-          <ReportsView />
+        ) : activeTab === "vehicles" ? (
+          <VehiclesView setHideBottomNav={setHideBottomNav} />
         ) : (
           <SettingsView
             trattaSelezionataId={trattaSelezionataId}
@@ -1513,12 +1591,14 @@ async function aggiornaDoveSono() {
         </Text>
       </ScrollView>
 
-      <View style={styles.bottomNav}>
-        <NavButton label="Mappa" icon="MAP" active={activeTab === "map"} onPress={() => setActiveTab("map")} />
-        <NavButton label="Home" icon="HOME" active={activeTab === "home"} onPress={() => setActiveTab("home")} />
-        <NavButton label="Resoconti" icon="REP" active={activeTab === "reports"} onPress={() => setActiveTab("reports")} />
-        <NavButton label="Impostazioni" icon="SET" active={activeTab === "settings"} onPress={() => setActiveTab("settings")} />
-      </View>
+      {!hideBottomNav ? (
+        <View style={styles.bottomNav}>
+          <NavButton label="Mappa" icon="MAP" active={activeTab === "map"} onPress={() => setActiveTab("map")} />
+          <NavButton label="Home" icon="HOME" active={activeTab === "home"} onPress={() => setActiveTab("home")} />
+          <NavButton label="Mezzi" icon="MEZ" active={activeTab === "vehicles"} onPress={() => setActiveTab("vehicles")} />
+          <NavButton label="Impostazioni" icon="SET" active={activeTab === "settings"} onPress={() => setActiveTab("settings")} />
+        </View>
+      ) : null}
     </SafeAreaView>
   );
 }
@@ -1546,10 +1626,11 @@ function HomeView({
 }) {
   return (
     <>
-      <View style={styles.heroHeader}>
-        <Text style={styles.appName}>DoveSono?</Text>
-        <Text style={styles.appSubtitle}>Sistema attivo</Text>
-      </View>
+      <ControlHeader
+        code="HOME"
+        title="DoveSono?"
+        subtitle="Registrazione e archivio tracce"
+      />
 
       <View style={styles.statusCard}>
         <View style={styles.statusPulse}>
@@ -1629,7 +1710,11 @@ function ArchiveView({
 }) {
   return (
     <>
-      <Text style={styles.subtitle}>Archivio tracce</Text>
+      <ControlHeader
+        code="ARC"
+        title="Archivio tracce"
+        subtitle="Gestione dei file registrati"
+      />
 
       <View style={styles.card}>
         <Text style={styles.sectionTitle}>Azioni archivio</Text>
@@ -1729,6 +1814,8 @@ function MapView({
   posizioneDoveSonoSuMaster,
   infoDoveSono,
   prossimaLocalitaDoveSono,
+  localitaAdiacentiDoveSono,
+  gpsQuality,
 }) {
   const trattaSelezionata = getTrattaSelezionata(trattaSelezionataId);
   const direzioniDisponibili = trattaSelezionata.direzioni || [];
@@ -1736,10 +1823,11 @@ function MapView({
 
   return (
     <>
-      <View style={styles.heroHeader}>
-        <Text style={styles.appName}>DoveSono?</Text>
-        <Text style={styles.appSubtitle}>La tua posizione sulla ferrovia</Text>
-      </View>
+      <ControlHeader
+        code="MAP"
+        title="Posizione ferroviaria"
+        subtitle="Cippo, località e qualità del segnale"
+      />
 
       <View style={styles.card}>
         <Text style={styles.sectionTitle}>Seleziona tratta</Text>
@@ -1809,19 +1897,22 @@ function MapView({
         {hasPosition ? (
           <>
             <Text style={styles.focusKmValue}>{infoDoveSono.progressivaReale}</Text>
-            <Text style={styles.focusLocation}>{infoDoveSono.riferimentoPiuVicino?.nome || "Localita non disponibile"}</Text>
+            <Text style={styles.focusLocation}>
+              {localitaAdiacentiDoveSono
+                ? `Tra ${localitaAdiacentiDoveSono.da} e ${localitaAdiacentiDoveSono.a}`
+                : "Località adiacenti non disponibili"}
+            </Text>
             <View style={styles.focusDivider} />
-            <Row label="Tratta" value={trattaSelezionata.nome} />
-            <Row label="Direzione" value={getDirezioneLabel(direzioneMappa)} />
-            <Row label="Distanza dalla linea" value={`${Math.round(posizioneDoveSonoSuMaster.distanzaDaLineaMetri)} m`} />
-            <Row label="Qualita GPS" value={posizioneDoveSonoSuMaster.qualitaAggancio || "--"} />
 
             {prossimaLocalitaDoveSono ? (
               <>
-                <Row label="Prossima localita" value={prossimaLocalitaDoveSono.nome} />
-                <Row label="Distanza" value={`${Math.round(prossimaLocalitaDoveSono.distanzaMetri)} m`} />
+                <Row label="Prossima località" value={prossimaLocalitaDoveSono.nome} />
+                <Row label="Distanza prossima località" value={`${Math.round(prossimaLocalitaDoveSono.distanzaMetri)} m`} />
               </>
             ) : null}
+
+            <Row label="Distanza dalla linea" value={`${Math.round(posizioneDoveSonoSuMaster.distanzaDaLineaMetri)} m`} />
+            <Row label="Qualità GPS" value={`${gpsQuality.label} · ${gpsQuality.detail}`} />
 
             {infoDoveSono.galleria ? (
               <View style={styles.warningBox}>
@@ -1848,33 +1939,136 @@ function MapView({
 }
 
 
-function ReportsView() {
+function VehiclesView({ setHideBottomNav }) {
+  const [mezzoSelezionatoId, setMezzoSelezionatoId] = useState(null);
+  const [dettaglioSelezionato, setDettaglioSelezionato] = useState(null);
+  const mezzoSelezionato = MEZZI_DATA.find((mezzo) => mezzo.id === mezzoSelezionatoId) || null;
+
+  useEffect(() => {
+    setHideBottomNav(Boolean(dettaglioSelezionato));
+    return () => setHideBottomNav(false);
+  }, [dettaglioSelezionato, setHideBottomNav]);
+
+  if (dettaglioSelezionato && mezzoSelezionato) {
+    const isTabella = dettaglioSelezionato.tipo === "tabella";
+
+    return (
+      <>
+        <TouchableOpacity style={styles.backButton} onPress={() => setDettaglioSelezionato(null)}>
+          <Text style={styles.backButtonText}>{"<"} Torna a {mezzoSelezionato.sigla}</Text>
+        </TouchableOpacity>
+
+        <ControlHeader
+          code={isTabella ? "TAB" : "AVR"}
+          title={dettaglioSelezionato.contenuto.titolo}
+          subtitle={mezzoSelezionato.nome}
+        />
+
+        {isTabella ? (
+          <TechnicalTable table={dettaglioSelezionato.contenuto} full />
+        ) : (
+          <View style={styles.procedureFullCard}>
+            <Text style={styles.procedureKicker}>PROCEDURA COMPLETA</Text>
+            {dettaglioSelezionato.contenuto.paragrafi.map((paragrafo, index) => (
+              <View key={`${dettaglioSelezionato.contenuto.id}-${index}`} style={styles.procedureParagraph}>
+                <Text style={styles.procedureNumber}>{String(index + 1).padStart(2, "0")}</Text>
+                <Text style={styles.procedureText}>{paragrafo}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+
+        <View style={styles.technicalNotice}>
+          <Text style={styles.technicalNoticeTitle}>Riferimento tecnico</Text>
+          <Text style={styles.technicalNoticeText}>
+            Contenuto riportato integralmente dal documento fornito. Verificare sempre la documentazione operativa vigente.
+          </Text>
+        </View>
+      </>
+    );
+  }
+
+  if (mezzoSelezionato) {
+    return (
+      <>
+        <TouchableOpacity style={styles.backButton} onPress={() => setMezzoSelezionatoId(null)}>
+          <Text style={styles.backButtonText}>{"<"} Tutti i mezzi</Text>
+        </TouchableOpacity>
+
+        <ControlHeader
+          code={mezzoSelezionato.sigla}
+          title={mezzoSelezionato.nome}
+          subtitle="Seleziona una tabella o un’avaria"
+        />
+
+        <Text style={styles.groupLabel}>TABELLE</Text>
+        <View style={styles.card}>
+          {mezzoSelezionato.tabelle.map((tabella) => (
+            <VehicleMenuItem
+              key={tabella.id}
+              code="TAB"
+              title={tabella.titolo}
+              detail={`${tabella.righe.length} righe tecniche`}
+              onPress={() => setDettaglioSelezionato({ tipo: "tabella", contenuto: tabella })}
+            />
+          ))}
+        </View>
+
+        <Text style={styles.groupLabel}>AVARIE E PROCEDURE</Text>
+        <View style={styles.card}>
+          {mezzoSelezionato.avarie.map((avaria) => (
+            <VehicleMenuItem
+              key={avaria.id}
+              code="AVR"
+              title={avaria.titolo}
+              detail="Apri procedura completa"
+              alert
+              onPress={() => setDettaglioSelezionato({ tipo: "avaria", contenuto: avaria })}
+            />
+          ))}
+        </View>
+      </>
+    );
+  }
+
   return (
     <>
-      <View style={styles.heroHeader}>
-        <Text style={styles.appName}>Resoconti/Giunti</Text>
-        <Text style={styles.appSubtitle}>Sezione in preparazione</Text>
+      <ControlHeader
+        code="MEZ"
+        title="Mezzi"
+        subtitle="Archivio tecnico dei treni"
+      />
+
+      <View style={styles.controlStatsRow}>
+        <ControlStat label="MEZZI" value={String(MEZZI_DATA.length)} />
+        <ControlStat
+          label="AVARIE"
+          value={String(MEZZI_DATA.reduce((totale, mezzo) => totale + mezzo.avarie.length, 0))}
+        />
+        <ControlStat
+          label="TABELLE"
+          value={String(MEZZI_DATA.reduce((totale, mezzo) => totale + mezzo.tabelle.length, 0))}
+        />
       </View>
 
-      <View style={styles.focusCard}>
-        <Text style={styles.bigKmLabel}>Prossimamente</Text>
-        <Text style={styles.emptyFocusText}>
-          Qui inseriremo resoconti, giunti, note e riferimenti utili per le tratte.
-        </Text>
-
-        <View style={styles.focusDivider} />
-
-        <Row label="Stato sezione" value="non disponibile ancora" />
-        <Row label="Prima versione" value="da definire" />
-      </View>
-
-      <View style={styles.noteBox}>
-        <Text style={styles.noteTitle}>Idea futura</Text>
-        <Text style={styles.noteText}>
-          Questa sezione potra contenere resoconti di viaggio, punti rilevati, giunti, note tecniche
-          e controlli sulle progressive delle varie linee.
-        </Text>
-      </View>
+      <Text style={styles.groupLabel}>SELEZIONA MEZZO</Text>
+      {MEZZI_DATA.map((mezzo) => (
+        <TouchableOpacity
+          key={mezzo.id}
+          style={styles.vehicleCard}
+          onPress={() => setMezzoSelezionatoId(mezzo.id)}
+        >
+          <View style={styles.vehicleCode}>
+            <Text style={styles.vehicleCodeText}>{mezzo.sigla}</Text>
+          </View>
+          <View style={styles.vehicleCopy}>
+            <Text style={styles.vehicleTitle}>{mezzo.nome}</Text>
+            <Text style={styles.vehicleDetail}>{mezzo.descrizione}</Text>
+            <Text style={styles.vehicleMeta}>{mezzo.avarie.length} avarie · {mezzo.tabelle.length} tabelle</Text>
+          </View>
+          <Text style={styles.vehicleChevron}>{">"}</Text>
+        </TouchableOpacity>
+      ))}
     </>
   );
 }
@@ -1884,15 +2078,16 @@ function SettingsView({ trattaSelezionataId, direzioneMappa, permissionStatus, b
 
   return (
     <>
-      <View style={styles.heroHeader}>
-        <Text style={styles.appName}>Impostazioni</Text>
-        <Text style={styles.appSubtitle}>DoveSono? - Focus One</Text>
-      </View>
+      <ControlHeader
+        code="SET"
+        title="Impostazioni"
+        subtitle="Stato dell’app e permessi"
+      />
 
       <View style={styles.card}>
         <Text style={styles.sectionTitle}>App</Text>
         <Row label="Nome" value="DoveSono?" />
-        <Row label="Interfaccia" value="Focus One" />
+        <Row label="Interfaccia" value="Control Panel" />
         <Row label="Tratta" value={tratta.nome} />
         <Row label="Direzione" value={getDirezioneLabel(direzioneMappa)} />
       </View>
@@ -1908,6 +2103,86 @@ function SettingsView({ trattaSelezionataId, direzioneMappa, permissionStatus, b
         <Text style={styles.noteText}>Taranto-Brindisi e disponibile. Taranto-Potenza e disponibile in bozza: controllare i raccordi stimati prima di considerarla definitiva. Bari-Bitritto sara abilitata dopo la creazione della master.</Text>
       </View>
     </>
+  );
+}
+
+function ControlHeader({ code, title, subtitle }) {
+  return (
+    <View style={styles.controlHeader}>
+      <View style={styles.controlHeaderCode}>
+        <Text style={styles.controlHeaderCodeText}>{code}</Text>
+      </View>
+      <View style={styles.controlHeaderCopy}>
+        <Text style={styles.controlHeaderEyebrow}>DOVESONO · CONTROL PANEL</Text>
+        <Text style={styles.controlHeaderTitle}>{title}</Text>
+        <Text style={styles.controlHeaderSubtitle}>{subtitle}</Text>
+      </View>
+      <View style={styles.controlOnline}>
+        <View style={styles.controlOnlineDot} />
+        <Text style={styles.controlOnlineText}>ON</Text>
+      </View>
+    </View>
+  );
+}
+
+function ControlStat({ label, value }) {
+  return (
+    <View style={styles.controlStat}>
+      <Text style={styles.controlStatValue}>{value}</Text>
+      <Text style={styles.controlStatLabel}>{label}</Text>
+    </View>
+  );
+}
+
+function VehicleMenuItem({ code, title, detail, alert, onPress }) {
+  return (
+    <TouchableOpacity style={styles.vehicleMenuItem} onPress={onPress}>
+      <View style={[styles.vehicleMenuCode, alert && styles.vehicleMenuCodeAlert]}>
+        <Text style={[styles.vehicleMenuCodeText, alert && styles.vehicleMenuCodeTextAlert]}>{code}</Text>
+      </View>
+      <View style={styles.vehicleMenuCopy}>
+        <Text style={styles.vehicleMenuTitle}>{title}</Text>
+        <Text style={styles.vehicleMenuDetail}>{detail}</Text>
+      </View>
+      <Text style={styles.vehicleChevron}>{">"}</Text>
+    </TouchableOpacity>
+  );
+}
+
+function TechnicalTable({ table, full }) {
+  return (
+    <View style={[styles.technicalTableCard, full && styles.technicalTableCardFull]}>
+      <Text style={styles.technicalTableTitle}>{table.titolo}</Text>
+      <Text style={styles.technicalTableHint}>Scorri lateralmente per vedere tutte le colonne</Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator>
+        <View style={styles.technicalTable}>
+          <View style={[styles.technicalTableRow, styles.technicalTableHeaderRow]}>
+            {table.intestazioni.map((cella, index) => (
+              <View
+                key={`${table.id}-header-${index}`}
+                style={[styles.technicalTableCell, index === 0 && styles.technicalTableFirstCell]}
+              >
+                <Text style={styles.technicalTableHeaderText}>{cella}</Text>
+              </View>
+            ))}
+          </View>
+          {table.righe.map((riga, rowIndex) => (
+            <View key={`${table.id}-row-${rowIndex}`} style={styles.technicalTableRow}>
+              {riga.map((cella, cellIndex) => (
+                <View
+                  key={`${table.id}-${rowIndex}-${cellIndex}`}
+                  style={[styles.technicalTableCell, cellIndex === 0 && styles.technicalTableFirstCell]}
+                >
+                  <Text style={[styles.technicalTableText, cellIndex === 0 && styles.technicalTableFirstText]}>
+                    {cella}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          ))}
+        </View>
+      </ScrollView>
+    </View>
   );
 }
 
@@ -1967,12 +2242,22 @@ function Button({ label, onPress, primary, danger, muted, disabled }) {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: "#050b12" },
-  container: { padding: 18, paddingBottom: 116 },
+  container: { width: "100%", maxWidth: 760, alignSelf: "center", padding: 18, paddingBottom: 116 },
   title: { color: "#ffffff", fontSize: 30, fontWeight: "900", marginTop: Platform.OS === "android" ? 20 : 4 },
   subtitle: { color: "#9fb0c1", fontSize: 15, marginTop: 6, marginBottom: 18 },
   heroHeader: { marginTop: Platform.OS === "android" ? 20 : 4, marginBottom: 18 },
   appName: { color: "#ffffff", fontSize: 38, fontWeight: "900", letterSpacing: -0.5 },
   appSubtitle: { color: "#9fb0c1", fontSize: 15, marginTop: 4 },
+  controlHeader: { minHeight: 112, flexDirection: "row", alignItems: "center", backgroundColor: "#0b131d", borderRadius: 22, padding: 14, marginTop: Platform.OS === "android" ? 18 : 4, marginBottom: 14, borderWidth: 1, borderColor: "#27445b" },
+  controlHeaderCode: { width: 58, height: 58, borderRadius: 16, backgroundColor: "#10251a", borderWidth: 1, borderColor: "#68e241", alignItems: "center", justifyContent: "center", marginRight: 12 },
+  controlHeaderCodeText: { color: "#68e241", fontSize: 14, fontWeight: "900", letterSpacing: 0.7, textAlign: "center" },
+  controlHeaderCopy: { flex: 1 },
+  controlHeaderEyebrow: { color: "#68e241", fontSize: 9, fontWeight: "900", letterSpacing: 1.2, marginBottom: 4 },
+  controlHeaderTitle: { color: "#ffffff", fontSize: 23, fontWeight: "900", letterSpacing: -0.3 },
+  controlHeaderSubtitle: { color: "#9fb0c1", fontSize: 12, marginTop: 4 },
+  controlOnline: { alignItems: "center", justifyContent: "center", marginLeft: 8 },
+  controlOnlineDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: "#68e241", marginBottom: 4 },
+  controlOnlineText: { color: "#68e241", fontSize: 9, fontWeight: "900" },
   card: { backgroundColor: "#0c141f", borderRadius: 22, padding: 16, marginBottom: 14, borderWidth: 1, borderColor: "#213040" },
   cardSoft: { backgroundColor: "#09111a", borderRadius: 20, padding: 16, marginBottom: 14, borderWidth: 1, borderColor: "#182635" },
   focusCard: { backgroundColor: "#0b131d", borderRadius: 26, padding: 20, marginBottom: 14, borderWidth: 1, borderColor: "#203445" },
@@ -2009,7 +2294,7 @@ const styles = StyleSheet.create({
   statusTitle: { color: "#ffffff", fontSize: 22, fontWeight: "900" },
   statusSubtitle: { color: "#9fb0c1", fontSize: 13, marginTop: 4 },
   focusKmValue: { color: "#68e241", fontSize: 56, fontWeight: "900", textAlign: "center", marginTop: 8 },
-  focusLocation: { color: "#ffffff", fontSize: 21, fontWeight: "900", textAlign: "center", marginTop: 2, marginBottom: 12 },
+  focusLocation: { color: "#ffffff", fontSize: 19, fontWeight: "900", textAlign: "center", marginTop: 4, marginBottom: 12, lineHeight: 26 },
   focusDivider: { height: 1, backgroundColor: "#1a2838", marginVertical: 14 },
   trackItem: { flexDirection: "column", gap: 10, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: "#1a2838" },
   trackInfo: { flex: 1 },
@@ -2035,6 +2320,49 @@ const styles = StyleSheet.create({
   noteBox: { backgroundColor: "#09111a", borderRadius: 18, padding: 14, marginTop: 6, borderWidth: 1, borderColor: "#203445" },
   noteTitle: { color: "#ffffff", fontSize: 15, fontWeight: "900", marginBottom: 6 },
   noteText: { color: "#b7c4d3", fontSize: 14, lineHeight: 20 },
+  controlStatsRow: { flexDirection: "row", gap: 9, marginBottom: 18 },
+  controlStat: { flex: 1, minHeight: 76, backgroundColor: "#0c141f", borderRadius: 16, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "#213040" },
+  controlStatValue: { color: "#68e241", fontSize: 25, fontWeight: "900" },
+  controlStatLabel: { color: "#8fa1b5", fontSize: 9, fontWeight: "900", letterSpacing: 0.8, marginTop: 3 },
+  groupLabel: { color: "#68e241", fontSize: 10, fontWeight: "900", letterSpacing: 1.5, marginTop: 4, marginBottom: 9, marginLeft: 2 },
+  vehicleCard: { flexDirection: "row", alignItems: "center", backgroundColor: "#0c141f", borderRadius: 20, padding: 14, marginBottom: 11, borderWidth: 1, borderColor: "#213040" },
+  vehicleCode: { width: 64, height: 64, borderRadius: 16, backgroundColor: "#071820", borderWidth: 1, borderColor: "#2e6682", alignItems: "center", justifyContent: "center", marginRight: 13 },
+  vehicleCodeText: { color: "#62c9ff", fontSize: 12, fontWeight: "900", textAlign: "center" },
+  vehicleCopy: { flex: 1 },
+  vehicleTitle: { color: "#ffffff", fontSize: 16, fontWeight: "900", lineHeight: 21 },
+  vehicleDetail: { color: "#9fb0c1", fontSize: 12, marginTop: 4 },
+  vehicleMeta: { color: "#68e241", fontSize: 11, fontWeight: "800", marginTop: 7 },
+  vehicleChevron: { color: "#68e241", fontSize: 25, marginLeft: 8 },
+  vehicleMenuItem: { flexDirection: "row", alignItems: "center", minHeight: 72, paddingVertical: 11, borderBottomWidth: 1, borderBottomColor: "#1a2838" },
+  vehicleMenuCode: { width: 46, height: 46, borderRadius: 13, backgroundColor: "#071820", borderWidth: 1, borderColor: "#2e6682", alignItems: "center", justifyContent: "center", marginRight: 12 },
+  vehicleMenuCodeAlert: { backgroundColor: "#251715", borderColor: "#b14b3f" },
+  vehicleMenuCodeText: { color: "#62c9ff", fontSize: 11, fontWeight: "900" },
+  vehicleMenuCodeTextAlert: { color: "#ff8f7d" },
+  vehicleMenuCopy: { flex: 1 },
+  vehicleMenuTitle: { color: "#ffffff", fontSize: 15, fontWeight: "900" },
+  vehicleMenuDetail: { color: "#8fa1b5", fontSize: 12, marginTop: 4 },
+  backButton: { alignSelf: "flex-start", backgroundColor: "#111c29", borderRadius: 12, paddingVertical: 9, paddingHorizontal: 12, marginTop: Platform.OS === "android" ? 18 : 4, marginBottom: 4, borderWidth: 1, borderColor: "#27445b" },
+  backButtonText: { color: "#c6d3df", fontSize: 12, fontWeight: "900" },
+  procedureFullCard: { backgroundColor: "#0c141f", borderRadius: 22, padding: 17, borderWidth: 1, borderColor: "#56342d", marginBottom: 14 },
+  procedureKicker: { color: "#ff8f7d", fontSize: 10, fontWeight: "900", letterSpacing: 1.3, marginBottom: 10 },
+  procedureParagraph: { flexDirection: "row", alignItems: "flex-start", gap: 12, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: "#1a2838" },
+  procedureNumber: { color: "#68e241", width: 24, fontSize: 12, fontWeight: "900", paddingTop: 2 },
+  procedureText: { color: "#ffffff", flex: 1, fontSize: 16, lineHeight: 25 },
+  technicalNotice: { backgroundColor: "#241f11", borderRadius: 16, padding: 14, borderWidth: 1, borderColor: "#806c21", marginBottom: 14 },
+  technicalNoticeTitle: { color: "#f1d98b", fontSize: 13, fontWeight: "900", marginBottom: 5 },
+  technicalNoticeText: { color: "#d5c894", fontSize: 12, lineHeight: 18 },
+  technicalTableCard: { backgroundColor: "#0c141f", borderRadius: 20, padding: 14, borderWidth: 1, borderColor: "#27445b", marginBottom: 14 },
+  technicalTableCardFull: { padding: 17 },
+  technicalTableTitle: { color: "#ffffff", fontSize: 18, fontWeight: "900", marginBottom: 4 },
+  technicalTableHint: { color: "#8fa1b5", fontSize: 11, marginBottom: 12 },
+  technicalTable: { borderWidth: 1, borderColor: "#2b3b4b", borderRadius: 10, overflow: "hidden" },
+  technicalTableRow: { flexDirection: "row", backgroundColor: "#09111a" },
+  technicalTableHeaderRow: { backgroundColor: "#10251a" },
+  technicalTableCell: { width: 76, minHeight: 48, paddingVertical: 9, paddingHorizontal: 6, alignItems: "center", justifyContent: "center", borderRightWidth: 1, borderBottomWidth: 1, borderColor: "#2b3b4b" },
+  technicalTableFirstCell: { width: 108, alignItems: "flex-start", paddingLeft: 9 },
+  technicalTableHeaderText: { color: "#68e241", fontSize: 10, fontWeight: "900", textAlign: "center" },
+  technicalTableText: { color: "#ffffff", fontSize: 13, fontWeight: "800", textAlign: "center" },
+  technicalTableFirstText: { color: "#c8d4df", textAlign: "left" },
   disclaimer: { color: "#68788a", fontSize: 11, marginTop: 16, lineHeight: 18, textAlign: "center" },
   routeOption: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: "#050b12", borderRadius: 18, paddingVertical: 15, paddingHorizontal: 14, marginBottom: 10, borderWidth: 1, borderColor: "#213040" },
   routeOptionActive: { borderColor: "#68e241", backgroundColor: "#10251a" },
@@ -2061,5 +2389,3 @@ const styles = StyleSheet.create({
   navButtonText: { color: "#9fb0c1", fontSize: 11, fontWeight: "900" },
   navButtonTextActive: { color: "#68e241" },
 });
-
-
