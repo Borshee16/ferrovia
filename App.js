@@ -226,6 +226,51 @@ function trovaLocalitaAdiacenti(distanzaMasterMetri, riferimenti, direzioneMappa
 }
 
 const TASK_NAME = "traccia-ferroviaria-background-location";
+const DOVE_SONO_BROWSER_TIMEOUT_MS = 10000;
+const DOVE_SONO_SAFETY_TIMEOUT_MS = 12000;
+
+function creaErroreTimeoutGps() {
+  const error = new Error("Il GPS non ha risposto in tempo. Premi nuovamente Dove sono?");
+  error.code = 3;
+  return error;
+}
+
+function posizioneBrowserConTimeout() {
+  return new Promise((resolve, reject) => {
+    let completata = false;
+    let safetyTimer = null;
+
+    const termina = (callback, value) => {
+      if (completata) return;
+      completata = true;
+      clearTimeout(safetyTimer);
+      callback(value);
+    };
+
+    safetyTimer = setTimeout(() => {
+      termina(reject, creaErroreTimeoutGps());
+    }, DOVE_SONO_SAFETY_TIMEOUT_MS);
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => termina(resolve, position),
+      (error) => termina(reject, error),
+      {
+        enableHighAccuracy: true,
+        maximumAge: 3000,
+        timeout: DOVE_SONO_BROWSER_TIMEOUT_MS,
+      }
+    );
+  });
+}
+
+function promessaConTimeout(promise, timeoutMs) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => {
+      setTimeout(() => reject(creaErroreTimeoutGps()), timeoutMs);
+    }),
+  ]);
+}
 
 const MIN_DISTANCE_METERS = 10;
 const MAX_ACCEPTED_ACCURACY_METERS = 80;
@@ -745,6 +790,7 @@ const refreshTimer = useRef(null);
 const clockTimer = useRef(null);
 const recordingPollTimer = useRef(null);
 const isSavingPoint = useRef(false);
+const doveSonoRequestRef = useRef(0);
 
   const lastLocation = points[points.length - 1] || null;
 
@@ -1410,7 +1456,8 @@ async function stopRecording() {
   }
 
 async function aggiornaDoveSono() {
-  if (isDoveSonoLoading) return;
+  const requestId = doveSonoRequestRef.current + 1;
+  doveSonoRequestRef.current = requestId;
 
   try {
     setIsDoveSonoLoading(true);
@@ -1420,13 +1467,9 @@ async function aggiornaDoveSono() {
         throw new Error("Geolocalizzazione non disponibile in questo browser.");
       }
 
-      const location = await new Promise((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject, {
-          enableHighAccuracy: true,
-          maximumAge: 0,
-          timeout: 15000,
-        });
-      });
+      const location = await posizioneBrowserConTimeout();
+
+      if (requestId !== doveSonoRequestRef.current) return;
 
       setPermissionStatus("granted");
       setPosizioneDoveSono(normalizeLocation(location));
@@ -1444,13 +1487,19 @@ async function aggiornaDoveSono() {
       return;
     }
 
-    const location = await Location.getCurrentPositionAsync({
-      accuracy: Location.Accuracy.BestForNavigation,
-      mayShowUserSettingsDialog: true,
-    });
+    const location = await promessaConTimeout(
+      Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.BestForNavigation,
+        mayShowUserSettingsDialog: true,
+      }),
+      DOVE_SONO_SAFETY_TIMEOUT_MS
+    );
 
+    if (requestId !== doveSonoRequestRef.current) return;
     setPosizioneDoveSono(normalizeLocation(location));
   } catch (error) {
+    if (requestId !== doveSonoRequestRef.current) return;
+
     if (Platform.OS === "web" && error?.code === 1) {
       setPermissionStatus("denied");
       Alert.alert("Permesso GPS negato", "Consenti la posizione nelle impostazioni del browser e riprova.");
@@ -1458,7 +1507,9 @@ async function aggiornaDoveSono() {
       Alert.alert("Errore GPS", error?.message || "Posizione non disponibile. Riprova.");
     }
   } finally {
-    setIsDoveSonoLoading(false);
+    if (requestId === doveSonoRequestRef.current) {
+      setIsDoveSonoLoading(false);
+    }
   }
 }
 
@@ -1927,11 +1978,11 @@ function MapView({
         )}
 
         <TouchableOpacity
-          style={[styles.mainActionButton, isDoveSonoLoading && styles.buttonDisabled]}
+          style={styles.mainActionButton}
           onPress={aggiornaDoveSono}
-          disabled={isDoveSonoLoading || !trattaSelezionata.disponibile}
+          disabled={!trattaSelezionata.disponibile}
         >
-          <Text style={styles.mainActionButtonText}>{isDoveSonoLoading ? "CALCOLO..." : "DOVE SONO?"}</Text>
+          <Text style={styles.mainActionButtonText}>{isDoveSonoLoading ? "RIPROVA GPS" : "DOVE SONO?"}</Text>
         </TouchableOpacity>
       </View>
     </>
