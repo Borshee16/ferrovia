@@ -1,4 +1,4 @@
-export const MEZZI_DATA = [
+﻿export const MEZZI_DATA = [
   {
     id: "etr-104-pop",
     nome: "ETR 104 POP",
@@ -8,7 +8,7 @@ export const MEZZI_DATA = [
       {
         id: "pop-freno",
         titolo: "Tabella %MF Isolamento Freno",
-        intestazioni: ["N° CARRELLI", "SINGOLO POP", "DOPPIO POP"],
+        intestazioni: ["NÂ° CARRELLI", "SINGOLO POP", "DOPPIO POP"],
         righe: [
           ["0", "135%", "135%"],
           ["1", "105%", "120%"],
@@ -21,8 +21,8 @@ export const MEZZI_DATA = [
       },
       {
         id: "pop-motori",
-        titolo: "Tabella N° Motori Esclusi",
-        intestazioni: ["N° MOTORI", "0", "1", "2", "3", "4", "5", "6"],
+        titolo: "Tabella NÂ° Motori Esclusi",
+        intestazioni: ["NÂ° MOTORI", "0", "1", "2", "3", "4", "5", "6"],
         righe: [
           ["SINGOLO", "31", "30", "22", "10", "0", "0", "0"],
           ["DOPPIO", "31", "31", "30", "27", "22", "17", "10"],
@@ -34,16 +34,16 @@ export const MEZZI_DATA = [
         id: "pop-antincendio",
         titolo: "Avaria antincendio",
         paragrafi: [
-          "Messa in servizio: Il convoglio non potrà più essere utilizzato per servizio commerciale",
-          "Durante la marcia: Può proseguire non oltre il termine della giornata di turno, se nella zona AT escludere la zona interessata, se comparto viaggiatori verificare che non ci siano principi d’incendio o incendi.",
+          "Messa in servizio: Il convoglio non potrÃ  piÃ¹ essere utilizzato per servizio commerciale",
+          "Durante la marcia: PuÃ² proseguire non oltre il termine della giornata di turno, se nella zona AT escludere la zona interessata, se comparto viaggiatori verificare che non ci siano principi dâ€™incendio o incendi.",
         ],
       },
       {
         id: "pop-riduttori",
         titolo: "Avaria riduttori",
         paragrafi: [
-          "Prima soglia 125 °C : escludere motore interessato",
-          "Seconda soglia 150 °C : verificare se le condizioni lo permettono, escludere il motore e proseguire a max 60 km/h per 300 km.",
+          "Prima soglia 125 Â°C : escludere motore interessato",
+          "Seconda soglia 150 Â°C : verificare se le condizioni lo permettono, escludere il motore e proseguire a max 60 km/h per 300 km.",
         ],
       },
       {
@@ -73,8 +73,8 @@ export const MEZZI_DATA = [
     tabelle: [
       {
         id: "jazz-motori",
-        titolo: "Tabella N° Motori Esclusi",
-        intestazioni: ["N° MOTORI", "0", "1", "2", "3", "4", "5", "6"],
+        titolo: "Tabella NÂ° Motori Esclusi",
+        intestazioni: ["NÂ° MOTORI", "0", "1", "2", "3", "4", "5", "6"],
         righe: [
           ["SINGOLO", "31", "31", "30", "16", "0", "0", "0"],
           ["DOPPIO", "31", "31", "31", "31", "30", "25", "16"],
@@ -83,7 +83,7 @@ export const MEZZI_DATA = [
       {
         id: "jazz-freno",
         titolo: "Tabella %MF Isolamento Freno",
-        intestazioni: ["N° CARRELLI", "SINGOLO JAZZ", "DOPPIO JAZZ"],
+        intestazioni: ["NÂ° CARRELLI", "SINGOLO JAZZ", "DOPPIO JAZZ"],
         righe: [
           ["0", "140%", "140%"],
           ["1", "110%", "125%"],
@@ -100,7 +100,7 @@ export const MEZZI_DATA = [
         id: "jazz-rca",
         titolo: "Guasto RCA",
         paragrafi: [
-          "Nel caso di dovesse guastare RCA, proseguire fino a termine corsa e poi dovrà essere inviato inattivo in impianto di manutenzione",
+          "Nel caso di dovesse guastare RCA, proseguire fino a termine corsa e poi dovrÃ  essere inviato inattivo in impianto di manutenzione",
         ],
       },
       {
@@ -145,8 +145,8 @@ export const MEZZI_DATA = [
     tabelle: [
       {
         id: "swing-motori",
-        titolo: "Tabella N° Motori Esclusi",
-        intestazioni: ["N° MOTORI", "0", "1", "2", "3"],
+        titolo: "Tabella NÂ° Motori Esclusi",
+        intestazioni: ["NÂ° MOTORI", "0", "1", "2", "3"],
         righe: [
           ["SINGOLO", "31", "25", "0", "0"],
           ["DOPPIO", "31", "29", "25", "9"],
@@ -183,9 +183,104 @@ export const MEZZI_DATA = [
         id: "swing-boccole",
         titolo: "Impianto boccole calde",
         paragrafi: [
-          "Limitare velocità a 40 km/h per massimo 300 km",
+          "Limitare velocitÃ  a 40 km/h per massimo 300 km",
+        ],
+      },
+      {
+        id: "swing-abilitazione-materiale",
+        titolo: "Abilitazione Materiale",
+        paragrafi: [
+          "Inserire batterie esternamente e sbloccare porta",
+          "Abilitare Banco",
+          "Accendere motori",
+          "Aspettare CP a regime",
+          "Aprire rubinetto CP nel package",
+          "Inserire SSB",
+          "Controllare pagina STATO-MOTORE i livelli (bianco = regolare, H = alto, L = basso, crociato = sotto il minimo)",
+          "Prova Freno",
+        ],
+      },
+      {
+        id: "swing-cambio-banco",
+        titolo: "Cambio Banco",
+        paragrafi: [
+          "LINV al centro",
+          "Disabilitare BM",
+          "Prendere chiavi e libri",
+          "Leve a zero",
+          "Chiudere rubinetto CP e togli SSB",
+          "Abiliti altro lato",
+          "Apri rubinetto CP e inserisci SSB",
+        ],
+      },
+      {
+        id: "swing-prova-freno",
+        titolo: "Prova Freno ",
+        paragrafi: [
+          "FAM inserito",
+          "Chiudere CG e CP in ordine",
+          "Selettore PF su 1",
+          "Prova di tenuta",
+          "Aprire CP e CG",
+          "Alimentare a 5 Bar e sfrenare i CF",
+          "Frenare con il continuo CF > 1.5 bar",
+          "Controllo finestrelle o monitor",
+          "Prova WSP da monitor",
+          "Sfrenare e frenare con indiretto depressione di 1.2 bar",
+          "Controllo finestrelle o monitor",
+          "Sfrenare completamente",
+          "Verifica finestrelle o monitor",
+        ],
+      },
+      {
+        id: "swing-prova-efficacia-fam",
+        titolo: "Prova di efficacia FAM",
+        paragrafi: [
+          "Inserire FAM",
+          "LINV avanti",
+          "Togliere holding brake",
+          "Togliere marcia automatica",
+          "Creare sforzo di trazione non superiore a 2%",
+          "Quando esce KN sbarrato la prova è finita",
+        ],
+      },
+      {
+        id: "swing-disabilitazione-completa",
+        titolo: " Disabilitazione completa",
+        paragrafi: [
+          "Chiudere porte",
+          "Inserire FAM e provarlo",
+          "Leve al centro",
+          "Chiudere CP",
+          "Disinserire SSB",
+          "Togliere patente",
+          "Spegni motori",
+          "Disabiliti banco",
+          "Esci e stacchi le batterie da fuori",
+        ],
+      },
+      {
+        id: "swing-reset-wc",
+        titolo: "Reset WC",
+        paragrafi: [
+          "Sta un selettore in cabina chiamato SB28/RESET WC",
+        ],
+      },
+      {
+        id: "swing-trazione-porte-aperte",
+        titolo: "Selettore Trazione Porte Aperte",
+        paragrafi: [
+          "Se sta IPA acceso per qualsiasi motivo o altri motivi che non ti facciano trazione usare selettore SA16, il quarto da sinistra prima riga. Velocità max 50 km/h",
+        ],
+      },
+      {
+        id: "swing-reset-dis",
+        titolo: "Reset DIS",
+        paragrafi: [
+          "Solo in cabina A pannello stotz sotto quello dei selettori n°FA97 / DIS",
         ],
       },
     ],
   },
 ];
+
