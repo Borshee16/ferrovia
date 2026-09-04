@@ -47,11 +47,6 @@ export const ANCORAGGI_STAZIONI_TARANTO_POTENZA = [
     "progressivaReale": 3916
   },
   {
-    "nome": "PM Cagioni",
-    "dMaster": 8011.8,
-    "progressivaReale": 8244
-  },
-  {
     "nome": "Palagiano Chiatona",
     "dMaster": 16721.2,
     "progressivaReale": 16386
@@ -530,4 +525,5 @@ export function trovaProssimaLocalita(progressivaMetri, direzioneMappa = "tarant
     distanzaMetri: progressivaMetri - prossima.progressiva,
   };
 }
+
 
